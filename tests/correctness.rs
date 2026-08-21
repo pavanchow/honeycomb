@@ -1,5 +1,6 @@
-// Tests push identical values repeatedly on purpose to drive the allocator.
-#![allow(clippy::same_item_push)]
+// Tests push identical values and deliberately nest Box/Vec on purpose, to
+// drive the allocator's paths. The clippy style lints do not apply here.
+#![allow(clippy::same_item_push, clippy::vec_box)]
 
 use honeycomb::Honeycomb;
 use std::collections::HashMap;
