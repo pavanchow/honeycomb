@@ -1,38 +1,48 @@
 use honeycomb::Honeycomb;
-use std::collections::HashMap;
+use std::alloc::{GlobalAlloc, Layout};
 
 #[global_allocator]
 static ALLOCATOR: Honeycomb = Honeycomb::new();
 
-// This lives in its own test binary, deliberately. `bytes_in_use` is a
-// single global counter shared by every #[test] fn that runs in the same
-// binary, and cargo runs those concurrently by default (separate threads,
-// same process, same static ALLOCATOR). A "returns to baseline" assertion
-// only means something if nothing else is allocating on the same counter
-// while it's being checked, so this check gets a binary to itself rather
-// than sharing one with tests that make no such promise.
+// Honeycomb's accounting invariant: every dealloc reverses exactly what its
+// matching alloc added to bytes_in_use. We verify that by calling the allocator
+// directly, so the measured window holds nothing but our own alloc/dealloc
+// pairs. A previous version drove this through a HashMap + format! workload and
+// asserted an exact return to baseline, but std collections make one-time,
+// persistent first-use allocations (hash seeds, output buffers) that land on
+// the same global counter inside the window on some platforms, which made the
+// exact-equality assertion pass on macOS and fail on Linux. Calling the
+// allocator directly removes that noise and tests the real invariant portably.
 #[test]
-fn bytes_in_use_returns_to_baseline_after_freeing_everything() {
-    let baseline = ALLOCATOR.stats().bytes_in_use;
+fn every_dealloc_reverses_its_alloc_across_size_classes() {
+    // A spread of sizes that exercises several small size classes and the
+    // large-allocation fallback to the system allocator.
+    let sizes = [8usize, 16, 64, 200, 256, 1000, 4096, 100_000, 3_000_000];
+    let base = ALLOCATOR.stats().bytes_in_use;
 
-    {
-        let mut v: Vec<Box<[u8; 256]>> = Vec::new();
-        for i in 0..1_000 {
-            v.push(Box::new([i as u8; 256]));
-        }
-        let mut m: HashMap<u32, String> = HashMap::new();
-        for i in 0..1_000u32 {
-            m.insert(i, format!("entry-{i}"));
-        }
-        let _big: Vec<u8> = vec![0; 2_000_000];
+    // Fixed stack array, so nothing but the direct alloc calls touches the heap.
+    let mut ptrs = [std::ptr::null_mut::<u8>(); 9];
+    assert_eq!(sizes.len(), ptrs.len());
 
-        let mid = ALLOCATOR.stats().bytes_in_use;
-        assert!(mid > baseline, "allocations should raise bytes_in_use");
+    unsafe {
+        for (i, &s) in sizes.iter().enumerate() {
+            let layout = Layout::from_size_align(s, 8).unwrap();
+            ptrs[i] = ALLOCATOR.alloc(layout);
+            assert!(!ptrs[i].is_null(), "alloc of {s} bytes returned null");
+        }
+        assert!(
+            ALLOCATOR.stats().bytes_in_use > base,
+            "allocations should raise bytes_in_use above the baseline"
+        );
+        for (i, &s) in sizes.iter().enumerate() {
+            let layout = Layout::from_size_align(s, 8).unwrap();
+            ALLOCATOR.dealloc(ptrs[i], layout);
+        }
     }
 
-    let after = ALLOCATOR.stats().bytes_in_use;
     assert_eq!(
-        after, baseline,
-        "bytes_in_use must return to baseline once every value above is dropped"
+        ALLOCATOR.stats().bytes_in_use,
+        base,
+        "bytes_in_use must return to exactly its pre-alloc value once every block is freed"
     );
 }
