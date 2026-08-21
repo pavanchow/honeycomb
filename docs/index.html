@@ -170,6 +170,147 @@
 </head>
 <body>
 
+<style>
+  .demo-controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 28px;
+  }
+  .demo-controls label {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .demo-controls input[type="number"] {
+    width: 120px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    font-size: 15px;
+    font-family: inherit;
+  }
+  .demo-controls button {
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .demo-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .demo-body {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 24px;
+    margin-top: 32px;
+    align-items: start;
+  }
+  .demo-classes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .class-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .class-label {
+    width: 92px;
+    flex: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .class-blocks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    flex: 1;
+  }
+  .class-count {
+    width: 96px;
+    flex: none;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+  }
+  .block {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    background: #f0f0f0;
+    border: 1px solid var(--line);
+  }
+  .block.used {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .block-overflow {
+    font-size: 11px;
+    color: var(--muted);
+    align-self: center;
+  }
+  .demo-live {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+    max-height: 420px;
+    overflow-y: auto;
+  }
+  .demo-live h3 {
+    margin: 0 0 12px;
+    font-size: 16px;
+  }
+  .demo-live ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .demo-live li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  .demo-live li .tag {
+    color: var(--muted);
+  }
+  .demo-live li button {
+    border: none;
+    background: #f5f5f5;
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .demo-live .empty {
+    color: var(--muted);
+    font-size: 13px;
+    padding: 8px 0;
+  }
+  .demo-note {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 16px;
+  }
+  @media (max-width: 720px) {
+    .demo-body { grid-template-columns: 1fr; }
+  }
+</style>
+
 <header class="hero">
   <div class="wrap">
     <span class="kicker">Memory allocator in Rust</span>
@@ -181,6 +322,37 @@
     </div>
   </div>
 </header>
+
+<section id="demo">
+  <div class="wrap">
+    <h2>Try it live</h2>
+    <p class="lead">This runs the same design as the Rust source, rebuilt in plain JavaScript so you can watch it work in the browser. Type a size, allocate it, and see which size class it lands in. Free any live block and watch the stats settle back down.</p>
+
+    <div class="demo-controls">
+      <label for="allocSize">Request size (bytes)</label>
+      <input type="number" id="allocSize" min="1" max="200000" value="48">
+      <button class="btn primary" id="allocBtn" type="button">Allocate</button>
+      <button class="btn secondary" id="workloadBtn" type="button">Run a workload</button>
+      <button class="btn secondary" id="resetBtn" type="button">Reset</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><div class="label">Allocations</div><div class="value" id="statAllocs">0</div></div>
+      <div class="stat"><div class="label">Frees</div><div class="value" id="statFrees">0</div></div>
+      <div class="stat"><div class="label">Bytes in use</div><div class="value" id="statBytes">0</div></div>
+      <div class="stat"><div class="label">Peak bytes</div><div class="value" id="statPeak">0</div></div>
+    </div>
+
+    <div class="demo-body">
+      <div class="demo-classes" id="classGrid"></div>
+      <div class="demo-live">
+        <h3>Live allocations</h3>
+        <ul id="allocList"></ul>
+      </div>
+    </div>
+    <p class="demo-note">Filled squares are blocks handed out and not yet freed. Empty squares are free blocks already carved from a slab, sitting on the free list ready for the next request of that class. A request over 4096 bytes skips the size classes and goes straight to a large bucket, same as the real allocator handing it to the system allocator.</p>
+  </div>
+</section>
 
 <section>
   <div class="wrap">
@@ -260,6 +432,236 @@ fn main() {
     <p>By Pavan Nallamothu.</p>
   </div>
 </noscript>
+
+<script>
+(function () {
+  "use strict";
+
+  var SIZE_CLASSES = [8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096];
+  var SLAB_BLOCKS = 64;
+  var MAX_RENDERED_BLOCKS = 128;
+
+  var state = null;
+
+  function freshState() {
+    return {
+      classes: SIZE_CLASSES.map(function (size) {
+        return { size: size, blocks: [] };
+      }),
+      allocations: 0,
+      frees: 0,
+      bytesInUse: 0,
+      peakBytes: 0,
+      nextAllocId: 1,
+      live: {}
+    };
+  }
+
+  function classIndexFor(size) {
+    for (var i = 0; i < SIZE_CLASSES.length; i++) {
+      if (SIZE_CLASSES[i] >= size) return i;
+    }
+    return -1;
+  }
+
+  function refill(classIdx) {
+    var cls = state.classes[classIdx];
+    for (var i = 0; i < SLAB_BLOCKS; i++) {
+      cls.blocks.push({ used: false });
+    }
+  }
+
+  function recordAlloc(size) {
+    state.allocations += 1;
+    state.bytesInUse += size;
+    if (state.bytesInUse > state.peakBytes) state.peakBytes = state.bytesInUse;
+  }
+
+  function recordFree(size) {
+    state.frees += 1;
+    state.bytesInUse -= size;
+  }
+
+  function performAlloc(requestSize) {
+    var size = Math.max(1, Math.floor(requestSize) || 1);
+    var idx = classIndexFor(size);
+    var id = state.nextAllocId++;
+    if (idx === -1) {
+      recordAlloc(size);
+      state.live[id] = { id: id, requestSize: size, classIdx: -1, size: size };
+      return id;
+    }
+    var cls = state.classes[idx];
+    var blockIndex = -1;
+    for (var i = 0; i < cls.blocks.length; i++) {
+      if (!cls.blocks[i].used) { blockIndex = i; break; }
+    }
+    if (blockIndex === -1) {
+      refill(idx);
+      blockIndex = cls.blocks.length - SLAB_BLOCKS;
+    }
+    cls.blocks[blockIndex].used = true;
+    recordAlloc(cls.size);
+    state.live[id] = { id: id, requestSize: size, classIdx: idx, blockIndex: blockIndex, size: cls.size };
+    return id;
+  }
+
+  function performFree(id) {
+    var entry = state.live[id];
+    if (!entry) return;
+    if (entry.classIdx === -1) {
+      recordFree(entry.size);
+    } else {
+      state.classes[entry.classIdx].blocks[entry.blockIndex].used = false;
+      recordFree(entry.size);
+    }
+    delete state.live[id];
+  }
+
+  function render() {
+    document.getElementById("statAllocs").textContent = String(state.allocations);
+    document.getElementById("statFrees").textContent = String(state.frees);
+    document.getElementById("statBytes").textContent = String(state.bytesInUse);
+    document.getElementById("statPeak").textContent = String(state.peakBytes);
+
+    var grid = document.getElementById("classGrid");
+    grid.innerHTML = "";
+    state.classes.forEach(function (cls) {
+      var row = document.createElement("div");
+      row.className = "class-row";
+
+      var label = document.createElement("div");
+      label.className = "class-label";
+      label.textContent = cls.size + " B";
+      row.appendChild(label);
+
+      var blocksWrap = document.createElement("div");
+      blocksWrap.className = "class-blocks";
+      var shown = Math.min(cls.blocks.length, MAX_RENDERED_BLOCKS);
+      for (var i = 0; i < shown; i++) {
+        var sq = document.createElement("div");
+        sq.className = "block" + (cls.blocks[i].used ? " used" : "");
+        blocksWrap.appendChild(sq);
+      }
+      if (cls.blocks.length > shown) {
+        var more = document.createElement("span");
+        more.className = "block-overflow";
+        more.textContent = "+" + (cls.blocks.length - shown) + " more";
+        blocksWrap.appendChild(more);
+      }
+      row.appendChild(blocksWrap);
+
+      var used = 0;
+      cls.blocks.forEach(function (b) { if (b.used) used++; });
+      var count = document.createElement("div");
+      count.className = "class-count";
+      count.textContent = used + " used / " + cls.blocks.length + " free list";
+      row.appendChild(count);
+
+      grid.appendChild(row);
+    });
+
+    var list = document.getElementById("allocList");
+    list.innerHTML = "";
+    var ids = Object.keys(state.live).map(Number).sort(function (a, b) { return a - b; });
+    if (ids.length === 0) {
+      var empty = document.createElement("li");
+      empty.className = "empty";
+      empty.textContent = "No live allocations";
+      list.appendChild(empty);
+    } else {
+      ids.forEach(function (id) {
+        var entry = state.live[id];
+        var li = document.createElement("li");
+
+        var left = document.createElement("span");
+        var tag = entry.classIdx === -1
+          ? "large bucket"
+          : entry.size + " B class";
+        left.textContent = "#" + entry.id + " requested " + entry.requestSize + " B ";
+        var tagSpan = document.createElement("span");
+        tagSpan.className = "tag";
+        tagSpan.textContent = "(" + tag + ")";
+        left.appendChild(tagSpan);
+
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = "Free";
+        btn.addEventListener("click", function () {
+          performFree(id);
+          render();
+        });
+
+        li.appendChild(left);
+        li.appendChild(btn);
+        list.appendChild(li);
+      });
+    }
+  }
+
+  function reset() {
+    state = freshState();
+    performAlloc(24);
+    performAlloc(600);
+    performAlloc(5000);
+    render();
+  }
+
+  function randomWorkloadSize() {
+    var buckets = [8, 20, 50, 100, 300, 700, 1500, 3000, 6000];
+    return buckets[Math.floor(Math.random() * buckets.length)];
+  }
+
+  function runWorkload() {
+    var allocBtn = document.getElementById("allocBtn");
+    var workloadBtn = document.getElementById("workloadBtn");
+    var resetBtn = document.getElementById("resetBtn");
+    allocBtn.disabled = true;
+    workloadBtn.disabled = true;
+    resetBtn.disabled = true;
+
+    var steps = 30;
+    var step = 0;
+
+    function tick() {
+      if (step >= steps) {
+        allocBtn.disabled = false;
+        workloadBtn.disabled = false;
+        resetBtn.disabled = false;
+        return;
+      }
+      var liveIds = Object.keys(state.live);
+      var doFree = liveIds.length > 4 && Math.random() < 0.45;
+      if (doFree) {
+        var pick = liveIds[Math.floor(Math.random() * liveIds.length)];
+        performFree(Number(pick));
+      } else {
+        performAlloc(randomWorkloadSize());
+      }
+      render();
+      step++;
+      setTimeout(tick, 110);
+    }
+
+    tick();
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("allocBtn").addEventListener("click", function () {
+      var input = document.getElementById("allocSize");
+      var size = parseInt(input.value, 10);
+      if (!size || size < 1) size = 1;
+      performAlloc(size);
+      render();
+    });
+
+    document.getElementById("workloadBtn").addEventListener("click", runWorkload);
+    document.getElementById("resetBtn").addEventListener("click", reset);
+
+    reset();
+  });
+})();
+</script>
 
 </body>
 </html>
