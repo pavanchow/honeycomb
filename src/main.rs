@@ -1,3 +1,7 @@
+// Several loops here push an identical value repeatedly on purpose, to exercise
+// the allocator's grow/realloc paths (resize/vec! would allocate only once).
+#![allow(clippy::same_item_push)]
+
 use honeycomb::Honeycomb;
 use std::collections::HashMap;
 
@@ -11,10 +15,7 @@ fn workload() {
         small.push(Box::new(i));
     }
 
-    // A growing vector, exercises realloc repeatedly. Pushing one at a time is
-    // the point here (resize/vec! would allocate once), so the same-item push
-    // is intentional.
-    #[allow(clippy::same_item_push)]
+    // A growing vector, exercises realloc repeatedly.
     let mut growing: Vec<u8> = Vec::new();
     for _ in 0..5000 {
         growing.push(0xAB);

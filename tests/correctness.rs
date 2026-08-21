@@ -1,3 +1,6 @@
+// Tests push identical values repeatedly on purpose to drive the allocator.
+#![allow(clippy::same_item_push)]
+
 use honeycomb::Honeycomb;
 use std::collections::HashMap;
 
