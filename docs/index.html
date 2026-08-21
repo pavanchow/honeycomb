@@ -2,11 +2,264 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>honeycomb</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Honeycomb: a readable memory allocator in Rust</title>
+<meta name="description" content="Honeycomb is a small, readable memory allocator in Rust that plugs in as a global allocator and exposes live stats on bytes in use, allocations, and frees.">
+<meta name="author" content="Pavan Nallamothu">
+<link rel="canonical" href="https://pavanchow.github.io/honeycomb/">
+<meta property="og:title" content="Honeycomb: a readable memory allocator in Rust">
+<meta property="og:description" content="A small, readable segregated free-list memory allocator in Rust that plugs in as a global allocator and exposes live stats.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://pavanchow.github.io/honeycomb/">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Honeycomb",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Cross-platform",
+  "description": "Honeycomb is a small, readable memory allocator in Rust that plugs in as a global allocator and exposes live stats on bytes in use, allocations, and frees.",
+  "author": {
+    "@type": "Person",
+    "name": "Pavan Nallamothu"
+  },
+  "url": "https://pavanchow.github.io/honeycomb/",
+  "codeRepository": "https://github.com/pavanchow/honeycomb",
+  "programmingLanguage": "Rust"
+}
+</script>
+<style>
+  :root {
+    --accent: #d97706;
+    --ink: #1a1a1a;
+    --muted: #6b6b6b;
+    --line: #ececec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #ffffff;
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+  header.hero {
+    padding: 120px 0 80px;
+    text-align: center;
+  }
+  .kicker {
+    display: inline-block;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 18px;
+  }
+  h1 {
+    font-size: 52px;
+    line-height: 1.1;
+    margin: 0 0 20px;
+    letter-spacing: -0.02em;
+  }
+  .sub {
+    font-size: 20px;
+    color: var(--muted);
+    max-width: 620px;
+    margin: 0 auto 36px;
+  }
+  .cta {
+    display: inline-flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn {
+    display: inline-block;
+    padding: 12px 22px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .btn.primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn.secondary {
+    background: #f5f5f5;
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  section { padding: 64px 0; border-top: 1px solid var(--line); }
+  h2 {
+    font-size: 30px;
+    letter-spacing: -0.01em;
+    margin-bottom: 12px;
+  }
+  .lead { color: var(--muted); font-size: 17px; max-width: 640px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 36px;
+  }
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .card .num {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 18px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .honest {
+    background: #fafafa;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 28px;
+    margin-top: 28px;
+  }
+  .honest p { margin: 0; font-size: 16px; }
+  pre {
+    background: #111111;
+    color: #eaeaea;
+    border-radius: 12px;
+    padding: 22px 24px;
+    overflow-x: auto;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  code { font-family: "SF Mono", Menlo, Consolas, monospace; }
+  .stats-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+  }
+  .stat {
+    flex: 1;
+    min-width: 140px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .stat .label { font-size: 13px; color: var(--muted); }
+  .stat .value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  footer {
+    padding: 48px 0 80px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    border-top: 1px solid var(--line);
+  }
+  footer a { color: var(--ink); }
+  @media (max-width: 720px) {
+    h1 { font-size: 36px; }
+    .grid { grid-template-columns: 1fr; }
+    header.hero { padding: 80px 0 56px; }
+  }
+</style>
 </head>
 <body>
-<h1>honeycomb</h1>
-<p>Site coming soon.</p>
-<p><a href="https://github.com/pavanchow/honeycomb">View repository</a></p>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="kicker">Memory allocator in Rust</span>
+    <h1>Honeycomb</h1>
+    <p class="sub">A small, readable segregated free-list global allocator for Rust. Plug it in with one static, and watch exactly how much memory your program is using, live.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/pavanchow/honeycomb">View on GitHub</a>
+      <a class="btn secondary" href="https://github.com/pavanchow/honeycomb/blob/main/DESIGN.md">Read the design</a>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="lead">Every allocation is rounded up to a size class, served from a free list, and backed by pages requested from the OS. Nothing hides behind a black box.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="num">01</div>
+        <h3>Size classes</h3>
+        <p>Requests round up to the nearest power-of-two class, from 8 bytes to 4096 bytes, chosen to satisfy both size and alignment.</p>
+      </div>
+      <div class="card">
+        <div class="num">02</div>
+        <h3>Free lists</h3>
+        <p>Each class keeps an intrusive free list threaded through the free blocks themselves. No headers, no per-block overhead.</p>
+      </div>
+      <div class="card">
+        <div class="num">03</div>
+        <h3>OS backing</h3>
+        <p>When a class runs dry, Honeycomb pulls one page-aligned slab from the system allocator and carves it into fresh blocks.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Live stats, not a guess</h2>
+    <p class="lead">Call <code>Honeycomb::stats()</code> anywhere in your program to see exactly what is happening, without reaching for a separate profiler.</p>
+    <div class="stats-row">
+      <div class="stat"><div class="label">Allocations</div><div class="value">count</div></div>
+      <div class="stat"><div class="label">Frees</div><div class="value">count</div></div>
+      <div class="stat"><div class="label">Bytes in use</div><div class="value">live</div></div>
+      <div class="stat"><div class="label">Peak bytes</div><div class="value">high water</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Usage</h2>
+    <p class="lead">One static, and every allocation in your program runs through Honeycomb.</p>
+    <pre><code>use honeycomb::Honeycomb;
+
+#[global_allocator]
+static ALLOCATOR: Honeycomb = Honeycomb::new();
+
+fn main() {
+    let v: Vec&lt;u8&gt; = vec![0; 1024];
+    drop(v);
+    println!("{:?}", ALLOCATOR.stats());
+}</code></pre>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Why use it</h2>
+    <div class="honest">
+      <p><strong>Honest note:</strong> jemalloc and mimalloc are faster. They are also black boxes tuned by years of production traffic. Honeycomb is not trying to win a benchmark. It exists so you can read the entire allocation path in one file, and so it can tell you, live, how much memory is actually in use. It is a teaching and observability allocator, not a production speed replacement.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><a href="https://github.com/pavanchow/honeycomb">github.com/pavanchow/honeycomb</a></p>
+    <p>By Pavan Nallamothu.</p>
+  </div>
+</footer>
+
+<noscript>
+  <div style="max-width:640px;margin:40px auto;padding:0 24px;font-family:sans-serif;">
+    <h1>Honeycomb</h1>
+    <p>A small, readable segregated free-list memory allocator in Rust that plugs in as a global allocator and exposes live stats. This is a memory allocator in Rust built for readability and observability, not for beating jemalloc or mimalloc on speed.</p>
+    <p><a href="https://github.com/pavanchow/honeycomb">View the repository on GitHub</a></p>
+    <p>By Pavan Nallamothu.</p>
+  </div>
+</noscript>
+
 </body>
 </html>

@@ -1,0 +1,17 @@
+[package]
+name = "honeycomb"
+version = "0.1.0"
+edition = "2024"
+description = "A small, readable segregated free-list memory allocator in Rust that plugs in as a global allocator."
+license = "MIT"
+authors = ["Pavan Nallamothu"]
+
+[lib]
+name = "honeycomb"
+path = "src/lib.rs"
+
+[[bin]]
+name = "honeycomb-demo"
+path = "src/main.rs"
+
+[dependencies]
