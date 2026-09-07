@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Honeycomb logo">
+  <defs>
+    <linearGradient id="hcT" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e79a2e"/>
+      <stop offset="1" stop-color="#b0640a"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#hcT)"/>
+  <g stroke="#fff" stroke-width="3.5" stroke-linejoin="round">
+    <polygon points="84,64 74,81.3 54,81.3 44,64 54,46.7 74,46.7" fill="#fff"/>
+    <polygon points="114,46.7 104,64 84,64 74,46.7 84,29.4 104,29.4" fill="#fff"/>
+    <polygon points="54,81.3 44,98.6 24,98.6 14,81.3 24,64 44,64" fill="#fff"/>
+    <polygon points="84,29.4 74,46.7 54,46.7 44,29.4 54,12.1 74,12.1" fill="rgba(255,255,255,0.16)"/>
+    <polygon points="84,98.6 74,115.9 54,115.9 44,98.6 54,81.3 74,81.3" fill="rgba(255,255,255,0.16)"/>
+    <polygon points="114,81.3 104,98.6 84,98.6 74,81.3 84,64 104,64" fill="rgba(255,255,255,0.16)"/>
+    <polygon points="54,46.7 44,64 24,64 14,46.7 24,29.4 44,29.4" fill="rgba(255,255,255,0.16)"/>
+  </g>
+</svg>

@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
 <title>Honeycomb: a readable memory allocator in Rust</title>
 <meta name="description" content="Honeycomb is a small, readable memory allocator in Rust that plugs in as a global allocator and exposes live stats on bytes in use, allocations, and frees.">
 <meta name="author" content="Pavan Nallamothu (pavanchow)">
@@ -89,6 +90,13 @@
 
   footer{padding:64px 0;border-top:1px solid var(--line);text-align:center;color:var(--muted)}
   footer .name{color:var(--ink);font-weight:600}
+  .howto{max-width:680px;margin:26px auto 0;border:1px solid var(--line);border-radius:14px;background:var(--panel2)}
+  .howto summary{cursor:pointer;padding:14px 18px;font:600 14px var(--mono);color:var(--ink);list-style:none}
+  .howto summary::-webkit-details-marker{display:none}
+  .howto summary::before{content:"▸";margin-right:9px;color:var(--accent)}
+  .howto[open] summary::before{content:"▾"}
+  .howto .howbody{padding:0 18px 16px;color:var(--muted);font-size:15px}
+  .howto .howbody b{color:var(--ink)}
 
   .demo-controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
   .demo-controls label{font-family:var(--mono);font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
@@ -131,6 +139,7 @@
 </div></nav>
 
 <div id="demo" class="hero">
+  <img src="logo.svg" alt="Honeycomb logo" width="72" height="72" style="display:block;margin:0 auto 18px">
   <p class="eyebrow">Rust · global allocator · live stats</p>
   <h1>Watch every byte,<br>live in the browser.</h1>
   <p class="sub">Honeycomb is a small, readable segregated free-list global allocator for Rust. Plug it in with one static, and watch exactly how much memory your program is using, live.</p>
@@ -167,6 +176,11 @@
       </div>
     </div>
     <p class="demo-note">Filled squares are blocks handed out and not yet freed. Empty squares are free blocks already carved from a slab, sitting on the free list ready for the next request of that class. A request over 4096 bytes skips the size classes and goes straight to a large bucket, same as the real allocator handing it to the system allocator.</p>
+
+    <details class="howto">
+      <summary>How to use this playground</summary>
+      <div class="howbody">Type a <b>request size</b> in bytes and hit <b>Allocate</b>; watch it round up to a size class and light up a block in that class's grid. Free any live allocation from the list on the right and see <b>bytes in use</b> settle back down while <b>peak bytes</b> holds the high-water mark. Hit <b>Run a workload</b> for a burst of mixed allocs and frees, or <b>Reset</b> to start clean. It runs the same segregated free-list design as the Rust allocator, rebuilt in JavaScript.</div>
+    </details>
   </div>
 </div>
 

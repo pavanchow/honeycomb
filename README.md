@@ -1,3 +1,5 @@
+<img src="docs/logo.svg" alt="Honeycomb logo" width="96">
+
 # Honeycomb
 
 **A small, readable memory allocator in Rust that shows you what your program is actually doing with memory.**
