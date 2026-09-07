@@ -7,6 +7,7 @@
 <title>Honeycomb: a readable memory allocator in Rust</title>
 <meta name="description" content="Honeycomb is a small, readable memory allocator in Rust that plugs in as a global allocator and exposes live stats on bytes in use, allocations, and frees.">
 <meta name="author" content="Pavan Nallamothu (pavanchow)">
+<meta name="keywords" content="memory allocator, Rust allocator, global allocator, segregated free list, size classes, GlobalAlloc, bytes in use, heap profiling, no_std free list, teaching allocator, Pavan Nallamothu, pavanchow">
 <link rel="canonical" href="https://pavanchow.github.io/honeycomb/">
 <meta property="og:title" content="Honeycomb: a readable memory allocator in Rust">
 <meta property="og:description" content="A small, readable segregated free-list memory allocator in Rust that plugs in as a global allocator and exposes live stats.">
@@ -19,6 +20,7 @@
   "name": "Honeycomb",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform",
+  "softwareVersion": "0.1.0",
   "description": "Honeycomb is a small, readable memory allocator in Rust that plugs in as a global allocator and exposes live stats on bytes in use, allocations, and frees.",
   "author": {
     "@type": "Person",
@@ -49,6 +51,7 @@
   nav .brand .gem{width:16px;height:16px;transform:rotate(45deg);border-radius:3px;background:linear-gradient(135deg,#f0b355,var(--accent))}
   nav .links{display:flex;gap:26px;align-items:center}
   nav .links a{color:var(--ink);font-size:14.5px}
+  nav .v{color:var(--faint);font-family:var(--mono);font-size:12px}
   @media(max-width:640px){nav .links a:not(.gh){display:none}}
 
   .hero{padding:70px 0 30px;text-align:center}
@@ -135,6 +138,7 @@
   <div class="links">
     <a href="#demo">Demo</a><a href="#how">How it works</a><a href="#usage">Usage</a>
     <a class="gh" href="https://github.com/pavanchow/honeycomb">GitHub</a>
+    <span class="v">v0.1.0</span>
   </div>
 </div></nav>
 
@@ -183,6 +187,16 @@
     </details>
   </div>
 </div>
+
+<section>
+  <h2>The stats are real numbers, from real runs.</h2>
+  <p class="lead">The bundled <code>honeycomb-demo</code> binary installs Honeycomb as the global allocator, runs a mixed workload of boxes, strings, a hash map, vector growth, and one million-byte allocation, then prints the accounting before and after.</p>
+  <pre><code><span style="color:#9d998d">$ cargo run --release --bin honeycomb-demo</span>
+[start] allocations=3 frees=0 bytes_in_use=1096 peak_bytes=1096
+mid-run: 2000 small boxes, 500 strings, 1000 map entries, 1000000 big bytes
+[after workload (everything dropped)] allocations=3546 frees=3541 bytes_in_use=2184 peak_bytes=1202768</code></pre>
+  <p class="lead" style="font-size:15px;margin-top:22px">Peak crosses a megabyte when the big buffer is live, then <code>bytes_in_use</code> settles back near baseline once everything is dropped. That is the accounting you also drive by hand in the playground above.</p>
+</section>
 
 <section id="how">
   <h2>How it works</h2>
