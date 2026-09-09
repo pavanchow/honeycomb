@@ -13,6 +13,9 @@
 <meta property="og:description" content="A small, readable segregated free-list memory allocator in Rust that plugs in as a global allocator and exposes live stats.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://pavanchow.github.io/honeycomb/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Honeycomb: a readable memory allocator in Rust">
+<meta name="twitter:description" content="A small, readable segregated free-list memory allocator in Rust that plugs in as a global allocator and exposes live stats.">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -42,6 +45,21 @@
   html{scroll-behavior:smooth}
   body{background:#fff;color:var(--ink);
     font:17px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  @media(prefers-color-scheme:dark){
+    :root{--accent:#e0a44a;--accent-soft:#2a2010;
+      --ink:#f3efe6;--muted:#b0aa9d;--faint:#87837a;
+      --line:#2a2823;--panel:#161512;--panel2:#0f0e0c;}
+    body{background:#0d0c0a}
+    nav{background:rgba(20,19,16,.82)}
+    .btn.primary{color:#0d0c0a}
+    .btn.primary:hover{color:#0d0c0a}
+    .btn.secondary{background:var(--panel)}
+    .card{background:linear-gradient(180deg,#171510,#0f0e0c);box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 18px 50px -30px rgba(0,0,0,.6)}
+    .demo-controls input[type="number"]{background:var(--panel);color:var(--ink)}
+    .demo-classes{background:var(--panel)}
+    .demo-live{background:var(--panel)}
+    .block{background:var(--panel);border-color:var(--line)}
+  }
   .wrap{max-width:1040px;margin:0 auto;padding:0 28px}
   a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
 
