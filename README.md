@@ -6,6 +6,8 @@ Honeycomb is a small, readable memory allocator in Rust: a segregated free-list 
 
 **[Live demo](https://pavanchow.github.io/honeycomb/)** · MIT licensed · pure Rust, no dependencies
 
+Built from scratch by [Pavan Nallamothu](https://pavanchow.github.io/) ([LinkedIn](https://www.linkedin.com/in/pavanchow/), [GitHub](https://github.com/pavanchow)).
+
 ## Honest note
 
 jemalloc and mimalloc are fast black boxes tuned by years of production traffic. Honeycomb is not trying to beat them, and it will not. It exists for the opposite reason: to be an allocator whose internals you can actually follow, and one that tells you, live, how much memory your program is using. Treat it as a teaching and observability allocator, not a drop-in replacement for a production-grade one.
